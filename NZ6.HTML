@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NZ South Island Trip Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overscroll-behavior: none;
+        }
+        .leaflet-popup-content-wrapper {
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .leaflet-popup-content {
+            margin: 13px 19px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .leaflet-popup-content a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+        .leaflet-popup-content a:hover {
+            text-decoration: underline;
+        }
+        .custom-popup .leaflet-popup-content-wrapper {
+            background: #ffffff;
+            color: #333;
+            border-radius: 12px;
+        }
+        .custom-popup .leaflet-popup-tip {
+            background: #ffffff;
+        }
+         /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 antialiased">
+
+    <!-- Main application container -->
+    <div id="app" class="flex flex-col md:flex-row h-screen w-screen">
+        
+        <!-- Sidebar: Placed below map on mobile (order-2) -->
+        <div class="w-full md:w-1/3 xl:w-1/4 bg-white flex flex-col shadow-lg z-10 order-2 md:order-1 h-2/3 md:h-full">
+            <!-- Header -->
+            <header class="p-4 border-b border-slate-200 shrink-0">
+                <h1 class="text-2xl font-bold text-slate-800">Cass & Alex's NZ Adventure</h1>
+                <p class="text-sm text-slate-500">New Zealand's South Island</p>
+            </header>
+
+            <!-- Day Navigation -->
+            <nav class="p-2 border-b border-slate-200 shrink-0">
+                <div id="day-selector" class="grid grid-cols-7 gap-1">
+                    <!-- Day buttons will be injected here -->
+                </div>
+            </nav>
+
+            <!-- Itinerary Details -->
+            <div id="itinerary-panel" class="flex-grow overflow-y-auto p-4 space-y-4">
+                <div id="daily-summary" class="bg-slate-50 p-4 rounded-lg">
+                    <h2 id="day-title" class="text-xl font-bold text-slate-900 mb-2"></h2>
+                    <div id="travel-info" class="mb-3 flex items-center gap-4 text-sm text-slate-600 font-medium">
+                        <!-- Travel info injected here -->
+                    </div>
+                    <p id="day-briefing" class="text-sm text-slate-600"></p>
+                </div>
+                
+                <!-- Filters -->
+                <div class="sticky top-0 bg-white py-2 z-10">
+                    <div id="filter-buttons" class="flex flex-wrap gap-2">
+                        <!-- Filter buttons will be injected here -->
+                    </div>
+                </div>
+
+                <div id="locations-list" class="space-y-3">
+                    <!-- Location items will be injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Map: Placed above sidebar on mobile (order-1) -->
+        <div id="map" class="w-full md:w-2/3 xl:w-3/4 order-1 md:order-2 h-1/3 md:h-full flex-shrink-0"></div>
+
+    </div>
+
+    <script>
+        const appData = {
+            "days": [
+                {
+                    "day": 1,
+                    "title": "Arrival in the Garden City",
+                    "date": "Monday, 6th October 2025",
+                    "briefing": "Your journey begins in Christchurch. Known as the 'Garden City,' it is a place defined by resilience and vibrant creativity. Today is about a gentle immersion into New Zealand's urban culture.",
+                    "locations": [
+                        { "name": "BreakFree on Cashel", "category": "Hotel", "address": "165 Cashel Street, Christchurch", "coords": [-43.535056, 172.640417], "website": "all.accor.com", "description": "A modern, stylish hotel in the heart of the CBD, known for its funky design and tech-integrated rooms. Your base for the first night." },
+                        { "name": "Christchurch Gondola", "category": "Activity", "address": "10 Bridle Path Road, Heathcote Valley", "coords": [-43.589, 172.716], "website": "christchurchattractions.nz", "description": "Ascend the Port Hills for breathtaking 360-degree views of the city, Canterbury Plains, and the distant Southern Alps." },
+                        { "name": "New Regent St Precinct", "category": "Pit Stop", "address": "New Regent Street, Christchurch", "coords": [-43.529278, 172.638722], "website": null, "description": "A charming pedestrian mall with beautiful Spanish Mission architecture, boutique shops, and cozy cafes." },
+                        { "name": "Sakura Japanese Cuisine", "category": "Food Spot", "address": "4/380 Riccarton Road, Upper Riccarton, Christchurch", "coords": [-43.532667, 172.568167], "website": "sakuracuisine.co.nz", "description": "A small, family-operated restaurant celebrated for its authentic and delicious Japanese cuisine in a cozy setting." },
+                        { "name": "Inati Restaurant", "category": "Food Spot", "address": "48 Hereford Street, Christchurch", "coords": [-43.531806, 172.636611], "website": "inati.nz", "description": "A fine-dining experience where guests sit around the chef's table, offering a unique 'eat-what-you-see' interactive meal." },
+                        { "name": "King of Snake", "category": "Food Spot", "address": "Level 1/79 Cashel Street, Christchurch", "coords": [-43.532889, 172.637361], "website": "kingofsnake.co.nz", "description": "A sultry restaurant offering a vibrant fusion of Euro-Asian flavours with panoramic views over the Avon River." },
+                        { "name": "Riverside Market", "category": "Food Spot", "address": "96 Oxford Terrace, Christchurch", "coords": [-43.533944, 172.634], "website": "riverside.nz", "description": "A bustling indoor market with a vibrant mix of local food stalls, cafes, restaurants, and bars." },
+                        { "name": "Twenty Seven Steps", "category": "Food Spot", "address": "16 New Regent Street, Christchurch", "coords": [-43.529389, 172.638556], "website": "twentysevensteps.co.nz", "description": "A beloved upstairs bistro on New Regent Street serving rustic, European-inspired fare in a warm, buzzing atmosphere." },
+                        { "name": "Pomeroy's Old Brewery Inn", "category": "Food Spot", "address": "292 Kilmore Street, Christchurch", "coords": [-43.525806, 172.645028], "website": "pomspub.co.nz", "description": "An authentic English-style pub offering classic pub grub and an extensive selection of craft beers on tap." },
+                        { "name": "5th Street", "category": "Food Spot", "address": "5 Elgin Street, Sydenham, Christchurch", "coords": [-43.542528, 172.639472], "website": "5thstreet.co.nz", "description": "A local favourite in a converted warehouse, with a menu designed for sharing, featuring creative and refined dishes." },
+                        { "name": "Hello Sunday", "category": "Food Spot", "address": "6 Elgin Street, Sydenham, Christchurch", "coords": [-43.542611, 172.639389], "website": "hellosunday.co.nz", "description": "Charming cafe in a historic building, famous for brunch but also offering a fantastic dinner service with fresh, flavour-packed food." },
+                        { "name": "Unknown Chapter", "category": "Food Spot", "address": "254 St Asaph Street, Christchurch", "coords": [-43.535444, 172.644722], "website": "unknownchaptercoffee.co.nz", "description": "A modern coffee roastery and café that roasts its beans on-site, focusing on free-range produce and creative takes on classics." }
+                    ]
+                },
+                {
+                    "day": 2,
+                    "title": "The Great Alpine Highway",
+                    "date": "Tuesday, 7th October 2025",
+                    "briefing": "Today, the true road trip begins. You'll trade the urban energy of Christchurch for the raw, dramatic beauty of the Southern Alps, journeying along the spectacular Great Alpine Highway (SH73).",
+                    "travelTime": "2 hours",
+                    "travelDistance": "150 km",
+                    "locations": [
+                        { "name": "Sheffield Pies", "category": "Pit Stop", "address": "51 Main West Road, Sheffield", "coords": [-43.387194, 171.930028], "website": "sheffieldpies.co.nz", "description": "A legendary pit stop famous for its award-winning, classic Kiwi meat pies. A must-try on the Great Alpine Highway." },
+                        { "name": "Kura Tāwhiti / Castle Hill", "category": "Pit Stop", "address": "State Highway 73, Castle Hill", "coords": [-43.231361, 171.722306], "website": "doc.govt.nz", "description": "Explore an otherworldly landscape of giant limestone boulders, a sacred place for Ngāi Tahu and a popular spot for climbers." },
+                        { "name": "Devil's Punchbowl Walking Track", "category": "Activity", "address": "Punchbowl Road, Arthur's Pass", "coords": [-42.932972, 171.568083], "website": "doc.govt.nz", "description": "A powerful 1-hour return walk through lush beech forest to the base of the spectacular 131-metre Devil's Punchbowl Falls." },
+                        { "name": "Klondyke Corner Campsite", "category": "Campsite", "address": "State Highway 73, Arthur's Pass NP", "coords": [-43.002028, 171.58925], "website": "doc.govt.nz", "description": "Large DOC campsite in a wide river valley with magnificent mountain views. Basic facilities. Booking required." },
+                        { "name": "Avalanche Creek Shelter Campsite", "category": "Campsite", "address": "SH 73, Arthur's Pass Village", "coords": [-42.940667, 171.562611], "website": "doc.govt.nz", "description": "Conveniently located in Arthur's Pass village. Can be noisy due to road/railway, but has better facilities like flush toilets." },
+                        { "name": "Greyneys Shelter Campground", "category": "Campsite", "address": "State Highway 73, Arthur's Pass NP", "coords": [-42.984306, 171.590611], "website": "doc.govt.nz", "description": "A free, first-come, first-served campground with basic facilities. A great budget option, though close to the road." }
+                    ]
+                },
+                {
+                    "day": 3,
+                    "title": "To the Starlight Reserve",
+                    "date": "Wednesday, 8th October 2025",
+                    "briefing": "Today's journey is a quintessential South Island traverse, taking you from Arthur's Pass into the vast, golden landscapes of the Mackenzie Basin, famed for its incredibly clear skies.",
+                    "travelTime": "3 hr 45 min",
+                    "travelDistance": "260 km",
+                    "locations": [
+                        { "name": "Town of Geraldine", "category": "Pit Stop", "address": "Geraldine, Canterbury", "coords": [-44.090278, 171.243333], "website": null, "description": "A charming country town with a village atmosphere, majestic old forests, and arts and crafts shops. Perfect for a break." },
+                        { "name": "Fairlie Bakehouse", "category": "Pit Stop", "address": "74 Main Street, Fairlie", "coords": [-44.100417, 170.828944], "website": "fairliebakehouse.co.nz", "description": "Home of the legendary Fairlie Pie, especially the Pork Belly & Apple Sauce. An essential stop before Lake Tekapo." },
+                        { "name": "Church of the Good Shepherd", "category": "Activity", "address": "Pioneer Drive, Lake Tekapo", "coords": [-44.003278, 170.4825], "website": "churchofthegoodshepherd.org.nz", "description": "One of New Zealand's most photographed buildings, set against the stunning backdrop of the turquoise lake and Southern Alps." },
+                        { "name": "Dark Sky Project", "category": "Activity", "address": "1 Motuariki Lane, Lake Tekapo", "coords": [-44.003417, 170.477611], "website": "darkskyproject.co.nz", "description": "Embark on a guided stargazing tour in the world's largest Dark Sky Reserve for an unforgettable astronomical experience." },
+                        { "name": "Tekapo Star Gazing", "category": "Activity", "address": "300 Lakeside Drive, Lake Tekapo", "coords": [-44.00125, 170.469806], "website": "tekapostargazing.co.nz", "description": "A unique experience combining astronomy with a relaxing soak in the Tekapo Springs hot pools under the stars." },
+                        { "name": "Dark Sky Diner", "category": "Food Spot", "address": "1 Motuariki Lane, Lake Tekapo", "coords": [-44.003417, 170.477611], "website": "darkskyproject.co.nz/dine", "description": "Convenient dining at the Dark Sky Project base, offering South American flair with spectacular floor-to-ceiling lake views." },
+                        { "name": "The Greedy Cow Cafe", "category": "Food Spot", "address": "16 Rapuwai Lane, Lake Tekapo", "coords": [-44.004611, 170.478806], "website": "greedycowtekapo.com", "description": "A beloved local café serving excellent coffee and a fantastic range of fresh cabinet food, plus a full menu." },
+                        { "name": "Blue Lake Eatery & Bar", "category": "Food Spot", "address": "State Highway 8, Lake Tekapo", "coords": [-44.005, 170.479889], "website": "bluelake.kiwi", "description": "Contemporary and cozy choice with open fireplaces, offering modern New Zealand cuisine and local craft beer." },
+                        { "name": "Kohan Restaurant", "category": "Food Spot", "address": "6 Rapuwai Lane, Lake Tekapo", "coords": [-44.004194, 170.478611], "website": "tekapojapanese.com", "description": "Famous for authentic Japanese cuisine, particularly its sushi and sashimi using fresh high-country salmon." },
+                        { "name": "Lakes Edge Holiday Park", "category": "Campsite", "address": "2 Lakeside Drive, Lake Tekapo", "coords": [-44.005306, 170.483306], "website": "laketekapo-accommodation.co.nz", "description": "A well-equipped holiday park right on the shores of the stunningly blue Lake Tekapo, offering powered sites and excellent facilities." },
+                        { "name": "Lake Pukaki Overnight Parking", "category": "Campsite", "address": "State Highway 80, Pukaki", "coords": [-44.157111, 170.129389], "website": null, "description": "One of NZ's most spectacular freedom camping spots (self-contained only), with breathtaking, direct views of Aoraki/Mount Cook." }
+                    ]
+                },
+                 {
+                    "day": 4,
+                    "title": "Journey to the Heart of the Alps",
+                    "date": "Thursday, 9th October 2025",
+                    "briefing": "A short but spectacular drive deep into Aoraki/Mount Cook National Park. The goal is to arrive early for the significant hike up to Mueller Hut.",
+                    "travelTime": "1 hr 15 min",
+                    "travelDistance": "105 km",
+                    "locations": [
+                        { "name": "Astro Cafe", "category": "Food Spot", "address": "Godley Peaks Road, Lake Tekapo", "coords": [-43.986611, 170.464889], "website": "darkskyproject.co.nz/eat/astro-cafe", "description": "Enjoy a coffee and stunning panoramic views from the top of Mt John, overlooking the Mackenzie Basin. (NZ$8 road toll)." },
+                        { "name": "Hooker Valley Track (Partial)", "category": "Activity", "address": "Hooker Valley Road, Aoraki/Mount Cook", "coords": [-43.71875, 170.092611], "website": "doc.govt.nz/hooker-valley-track", "description": "Though partially closed, the first section to Mueller Lake lookout is an easy, flat walk with stunning glacier and mountain views." },
+                        { "name": "Mueller Hut", "category": "Campsite", "address": "Aoraki/Mount Cook National Park", "coords": [-43.728111, 170.075889], "website": "doc.govt.nz", "description": "A legendary alpine hut with 360-degree panoramas. The challenging 4-hour uphill hike is rewarded with an overnight stay in the heavens." }
+                    ]
+                },
+                {
+                    "day": 5,
+                    "title": "Aoraki/Mount Cook Deep Dive",
+                    "date": "Friday, 10th October 2025",
+                    "briefing": "A day of deep immersion in the wonders of Aoraki/Mount Cook National Park. With no long drive, you have time to explore the various valley-floor walks and experiences.",
+                    "locations": [
+                        { "name": "Peter's Lookout", "category": "Pit Stop", "address": "State Highway 80, Aoraki/Mount Cook NP", "coords": [-44.058806, 170.16125], "website": null, "description": "An iconic photo stop offering one of the most famous and accessible views of Aoraki/Mount Cook framed by Lake Pukaki." },
+                        { "name": "Aoraki/Mount Cook Visitor Centre", "category": "Activity", "address": "1 Larch Grove, Aoraki/Mount Cook Village", "coords": [-43.734389, 170.098889], "website": "doc.govt.nz", "description": "An attraction in itself, with excellent exhibits on geology, flora, fauna, and mountaineering history, plus a stunning view." },
+                        { "name": "Kea Point Track", "category": "Activity", "address": "Hooker Valley Road, Aoraki/Mount Cook NP", "coords": [-43.71875, 170.092611], "website": "hikespeak.com", "description": "An easy 1-hour return walk to a viewing platform overlooking the Mueller Glacier terminal lake and a dramatic view of Mount Sefton." },
+                        { "name": "Blue Lakes & Tasman Glacier Track", "category": "Activity", "address": "Tasman Valley Road, Aoraki/Mount Cook NP", "coords": [-43.703806, 170.146389], "website": "hikespeak.com", "description": "An easy walk up the moraine wall for views of icebergs floating in the terminal lake of New Zealand's longest glacier." },
+                        { "name": "Sealy Tarns Track", "category": "Activity", "address": "Hooker Valley Road, Aoraki/Mount Cook NP", "coords": [-43.71875, 170.092611], "website": "hermitage.co.nz", "description": "A strenuous but rewarding 3-4 hour return hike up the 'Stairway to Heaven' (2,200+ steps) for spectacular reflective views." },
+                        { "name": "Glacier Explorers Boat Tour", "category": "Activity", "address": "89 Terrace Road, Aoraki/Mount Cook Village", "coords": [-43.733361, 170.095611], "website": "glentanner.co.nz", "description": "A unique 2.5-hour tour on the Tasman Glacier lake, weaving between ancient icebergs. Booking is essential." },
+                        { "name": "The Old Mountaineers' Café", "category": "Food Spot", "address": "Aoraki/Mount Cook Village", "coords": [-43.734583, 170.098806], "website": "mtcook.com/restaurant", "description": "A historic and cozy cafe offering hearty meals with incredible views. A perfect place to relax after a day of hiking." },
+                        { "name": "Chamois Bar & Grill", "category": "Food Spot", "address": "Mount Cook Lodge, Aoraki/Mount Cook Village", "coords": [-43.735861, 170.096944], "website": "hermitage.co.nz/dine/chamois-bar", "description": "The village's pub, offering a relaxed environment with pub-style meals, a pool table, and panoramic mountain views." },
+                        { "name": "White Horse Hill Campground", "category": "Campsite", "address": "Hooker Valley Road, Aoraki/Mount Cook NP", "coords": [-43.71875, 170.092611], "website": "hikespeak.com", "description": "The premier DOC campground at the start of major tracks. Arrive early to secure a spot in this scenic location." }
+                    ]
+                },
+                {
+                    "day": 6,
+                    "title": "Over the Lindis to Wānaka",
+                    "date": "Saturday, 11th October 2025",
+                    "briefing": "Journey south to the vibrant lakeside town of Wānaka. The drive is one of the most celebrated in New Zealand, over the dramatic, sculptural landscape of the Lindis Pass.",
+                    "travelTime": "2 hr 30 min",
+                    "travelDistance": "206 km",
+                    "locations": [
+                        { "name": "Mt Cook Alpine Salmon", "category": "Pit Stop", "address": "Lake Pukaki Visitor Centre, SH 8", "coords": [-44.157111, 170.129389], "website": "alpinesalmon.co.nz", "description": "Purchase some of the freshest sashimi in the world, straight from the glacial waters of Lake Pukaki, and enjoy it by the lake." },
+                        { "name": "Omarama Clay Cliffs", "category": "Pit Stop", "address": "Henburn Road, Omarama", "coords": [-44.488889, 169.868389], "website": "newzealand.com", "description": "A short detour to a spectacular geological formation of sharp pinnacles and ravines that feel like another planet. (Honesty box fee)." },
+                        { "name": "Lindis Pass Viewpoint", "category": "Pit Stop", "address": "State Highway 8, Lindis Pass", "coords": [-44.600222, 169.450194], "website": null, "description": "A stop at the summit (971m) to admire the vast, tussock-covered landscapes of the Lindis Pass. A short walk up the hill gives panoramic views." },
+                        { "name": "Tarras Country Cafe", "category": "Food Spot", "address": "2792 Tarras Cromwell Road, Tarras", "coords": [-44.836694, 169.418389], "website": "centralotagonz.com", "description": "A charming stop known for its merino sheep history and excellent gourmet country cuisine and great coffee." },
+                        { "name": "#ThatWanakaTree", "category": "Activity", "address": "59 Wanaka-Mount Aspiring Road, Wānaka", "coords": [-44.698306, 169.1175], "website": null, "description": "Visit one of the most famous and photographed trees in the world, a solitary willow growing out of Lake Wānaka." },
+                        { "name": "Mount Iron Track", "category": "Activity", "address": "Mount Iron carpark, Wānaka", "coords": [-44.695, 169.152389], "website": "planmywalk.nz", "description": "A popular 1.5-hour loop walk climbing to the summit of a rocky knoll for fantastic 360-degree views of the area." },
+                        { "name": "Glendhu Bay Motor Camp", "category": "Campsite", "address": "1127 Mount Aspiring Road, Wānaka", "coords": [-44.694806, 169.006389], "website": "hampshireholidayparks.co.nz", "description": "Wānaka's only true lakefront holiday park, situated in picturesque Glendhu Bay with breathtaking scenery. Closest park to Roy's Peak." },
+                        { "name": "Hampshire Holiday Parks - Wānaka", "category": "Campsite", "address": "212 Brownston Street, Wānaka", "coords": [-44.700889, 169.134306], "website": "hampshireholidayparks.co.nz", "description": "A well-regarded park just a 10-minute walk from the town centre, with excellent facilities and a family-friendly playground." }
+                    ]
+                },
+                {
+                    "day": 7,
+                    "title": "Wānaka Deep Dive",
+                    "date": "Sunday, 12th October 2025",
+                    "briefing": "A day for deep immersion in the spectacular landscapes surrounding Wānaka. Tackle one of the region's iconic hikes or explore the more relaxed side of this beautiful area.",
+                    "locations": [
+                        { "name": "Rob Roy Glacier Track", "category": "Activity", "address": "Raspberry Creek Car Park, Matukituki Valley", "coords": [-44.565611, 168.791194], "website": "wanaka.co.nz", "description": "Arguably one of the best half-day hikes in NZ. A 4-5 hour return track leading to a breathtaking alpine amphitheatre with close-up glacier views." },
+                        { "name": "Isthmus Peak Track", "category": "Activity", "address": "Isthmus Peak Car Park, SH 6", "coords": [-44.536694, 169.217306], "website": "wanaka.co.nz", "description": "A fantastic, challenging alternative to Roy's Peak, offering incredible panoramic views of both Lake Wānaka and Lake Hāwea." },
+                        { "name": "Rippon Vineyard", "category": "Activity", "address": "246 Wanaka-Mount Aspiring Road, Wānaka", "coords": [-44.691889, 169.103], "website": "rippon.co.nz", "description": "Visit one of the world's most beautiful vineyards (by appointment only) for a tasting of their excellent Central Otago wines." },
+                        { "name": "Lakeland Kayak Hire", "category": "Activity", "address": "100 Ardmore Street, Wānaka", "coords": [-44.696194, 169.136389], "website": "lakelandwanaka.com", "description": "Experience the crystal-clear water of Lake Wānaka up close. Paddle out to the famous tree or take a picnic to Ruby Island." },
+                        { "name": "Kika", "category": "Food Spot", "address": "2 Dunmore Street, Wānaka", "coords": [-44.697, 169.139611], "website": "kika.nz", "description": "One of Wānaka's top fine-dining spots. Serves innovative, tapas-style sharing plates. Booking is essential." },
+                        { "name": "Arc", "category": "Food Spot", "address": "74 Ardmore Street, Wānaka", "coords": [-44.696417, 169.137389], "website": "arcwanaka.co.nz", "description": "A cozy and elegant space offering tapas-style sharing plates, an excellent cocktail list, and a beautiful 'secret' garden." },
+                        { "name": "Big Fig", "category": "Food Spot", "address": "105 Ardmore Street, Wānaka", "coords": [-44.695528, 169.140056], "website": "bigfig.co.nz", "description": "Famous for its 'slow food, served fast' concept. A perfect spot for a healthy, delicious, and quick meal with fresh, vibrant salads and tender meats." },
+                        { "name": "Federal Diner", "category": "Food Spot", "address": "47 Helwick Street, Wānaka", "coords": [-44.697194, 169.137194], "website": "federaldiner.co.nz", "description": "A hidden gem and a favourite with locals, tucked away off the main street. Serves excellent specialty coffee and seasonal food." }
+                    ]
+                },
+                {
+                    "day": 8,
+                    "title": "The Crown Range to Queenstown",
+                    "date": "Monday, 13th October 2025",
+                    "briefing": "A short but spectacular drive via the Crown Range Road, the highest main road in New Zealand. Descend into the vibrant, world-renowned adventure capital of Queenstown.",
+                    "travelTime": "1 hr 10 min",
+                    "travelDistance": "68 km",
+                    "locations": [
+                        { "name": "Crown Range Summit Lookout", "category": "Pit Stop", "address": "Crown Range Road, Cardrona", "coords": [-44.958194, 169.031306], "website": null, "description": "At 1,076 metres, the highest point on the main road offers stunning panoramic views over the Arrowtown and Queenstown area." },
+                        { "name": "Cardrona Hotel", "category": "Pit Stop", "address": "2312 Cardrona Valley Road, Cardrona", "coords": [-44.883611, 169.010111], "website": "cardronahotel.co.nz", "description": "One of New Zealand's oldest and most iconic hotels. Stop for a photo and a drink in its historic, character-filled pub." },
+                        { "name": "Bradrona (Bra Fence)", "category": "Pit Stop", "address": "Cardrona Valley Road, Cardrona", "coords": [-44.860444, 169.021556], "website": null, "description": "One of NZ's quirkiest landmarks. What began as a mystery is now a famous attraction raising money for breast cancer research." },
+                        { "name": "Arrowtown", "category": "Pit Stop", "address": "Arrowtown, Otago", "coords": [-44.941111, 168.833306], "website": "arrowtown.com", "description": "A charming and beautifully preserved gold rush village. Explore the historic main street and the restored Chinese settlement." },
+                        { "name": "Queenstown Holiday Park Creeksyde", "category": "Campsite", "address": "54 Robins Road, Queenstown", "coords": [-45.029111, 168.664694], "website": "camp.co.nz", "description": "A peaceful and popular park in a garden setting, yet only a five-minute walk from the vibrant town centre." },
+                        { "name": "Queenstown Lakeview Holiday Park", "category": "Campsite", "address": "4 Cemetery Road, Queenstown", "coords": [-45.030389, 168.656611], "website": "hampshireholidayparks.co.nz", "description": "Boasts one of the best locations in town, just a 2-minute walk from the centre and overlooking Lake Wakatipu." }
+                    ]
+                },
+                {
+                    "day": 9,
+                    "title": "Queenstown Deep Dive",
+                    "date": "Tuesday, 14th October 2025",
+                    "briefing": "A full day to dive into the adrenaline and spectacle of Queenstown. From high-speed thrills on the water to panoramic views from above, today is about embracing the energy of the 'Adventure Capital.'",
+                    "locations": [
+                        { "name": "Shotover Jet", "category": "Activity", "address": "3 Arthurs Point Road, Arthurs Point", "coords": [-44.994889, 168.678944], "website": "shotoverjet.com", "description": "The world-famous jet boat ride. Experience high-speed thrills and 360-degree spins through the narrow, dramatic Shotover River Canyons." },
+                        { "name": "Skyline Gondola & Luge", "category": "Activity", "address": "53 Brecon Street, Queenstown", "coords": [-45.029111, 168.657306], "website": "skyline.co.nz/en/queenstown", "description": "Ride the steepest cable car in the Southern Hemisphere for iconic views, then race down the mountain on the thrilling luge tracks." },
+                        { "name": "Ayrburn", "category": "Food Spot", "address": "1 Ayr Avenue, Arrowtown", "coords": [-44.952111, 168.817306], "website": "ayrburn.com", "description": "Queenstown's newest food and wine precinct in a restored historic farm setting. A must-visit for a special occasion." },
+                        { "name": "The Bunker", "category": "Food Spot", "address": "14 Cow Lane, Queenstown", "coords": [-45.031694, 168.662306], "website": "thebunker.co.nz", "description": "An institution for intimate fine dining, specializing in game and red meats, with a renowned late-night cocktail bar upstairs." },
+                        { "name": "Fergburger", "category": "Food Spot", "address": "42 Shotover Street, Queenstown", "coords": [-45.031806, 168.661389], "website": "fergburger.com", "description": "A Queenstown institution. These giant, gourmet burgers are world-famous and worth the inevitable queue." },
+                        { "name": "Vudu Café & Larder", "category": "Food Spot", "address": "16 Rees Street, Queenstown", "coords": [-45.032306, 168.662389], "website": "vudu.co.nz", "description": "A modern waterfront café known for its excellent coffee, experimental cooking, and warm, welcoming vibe." },
+                        { "name": "The Boat Shed Café & Bistro", "category": "Food Spot", "address": "874 Frankton Road, Frankton, Queenstown", "coords": [-45.025194, 168.715], "website": "boatshedqueenstown.co.nz", "description": "Housed in a restored historic building on the marina, offering relaxed dining with panoramic lake and mountain views." }
+                    ]
+                },
+                {
+                    "day": 10,
+                    "title": "The Gateway to Fiordland",
+                    "date": "Wednesday, 15th October 2025",
+                    "briefing": "Leave the buzz of Queenstown behind and head towards Te Anau, the tranquil gateway to the majestic Fiordland National Park.",
+                    "travelTime": "2 hr 30 min",
+                    "travelDistance": "171 km",
+                    "locations": [
+                        { "name": "Kingston", "category": "Pit Stop", "address": "Kingston, Otago", "coords": [-45.333333, 168.716667], "website": null, "description": "A historic and scenic town at the southernmost tip of Lake Wakatipu, and the historic terminus of the Kingston Flyer steam train." },
+                        { "name": "Te Anau Glowworm Caves", "category": "Activity", "address": "85 Lakefront Drive, Te Anau", "coords": [-45.414306, 167.715194], "website": "realnz.com", "description": "A magical experience. Cruise across Lake Te Anau to explore a unique underground cave system illuminated by thousands of tiny glowworms." },
+                        { "name": "The Redcliff Restaurant & Bar", "category": "Food Spot", "address": "12 Mokonui Street, Te Anau", "coords": [-45.415389, 167.718389], "website": "theredcliff.co.nz", "description": "A laid-back yet upscale restaurant known for its excellent New Zealand dishes, particularly its perfectly cooked steaks and venison." },
+                        { "name": "The Fat Duck", "category": "Food Spot", "address": "124 Town Centre, Te Anau", "coords": [-45.414389, 167.717889], "website": "thefatduck.co.nz", "description": "An award-winning gastropub serving up elevated pub classics with a commitment to locally sourced, seasonal ingredients." },
+                        { "name": "Ditto", "category": "Food Spot", "address": "92 Town Centre, Te Anau", "coords": [-45.415056, 167.717194], "website": "eatatditto.co.nz", "description": "An exciting eatery offering a vibrant fusion of Southland and East Asian flavours in a modern, creative space." },
+                        { "name": "Cascade Creek Campsite", "category": "Campsite", "address": "Te Anau-Milford Highway", "coords": [-44.962611, 168.040994], "website": "doc.govt.nz", "description": "A popular, large DOC campsite located halfway along the Milford Road, ideal for breaking up the journey and getting an early start." },
+                        { "name": "Tasman Holiday Parks - Te Anau", "category": "Campsite", "address": "1 Te Anau-Manapouri Highway, Te Anau", "coords": [-45.421389, 167.710806], "website": "tasmanholidayparks.com", "description": "A 5-star rated commercial park with top-quality facilities, located beside the lake and a short walk from town." }
+                    ]
+                },
+                {
+                    "day": 11,
+                    "title": "The Road to Milford Sound",
+                    "date": "Thursday, 16th October 2025",
+                    "briefing": "One of the world's greatest driving days. The journey from Te Anau to Milford Sound is an integral part of the Fiordland experience, culminating at the majestic fiord itself.",
+                    "travelTime": "1 hr 20 min",
+                    "travelDistance": "118 km",
+                    "locations": [
+                        { "name": "Eglinton Valley", "category": "Pit Stop", "address": "Te Anau-Milford Highway", "coords": [-45.144611, 167.994889], "website": null, "description": "A stunning, vast, glacier-carved valley. One of the first major photo stops on the Milford Road, used as a location in Lord of the Rings." },
+                        { "name": "Lake Marian Track (Falls)", "category": "Activity", "address": "Hollyford Road, Fiordland", "coords": [-44.813194, 168.110889], "website": "doc.govt.nz", "description": "An easy, 20-minute walk through lush rainforest to a spectacular series of cascading waterfalls. A perfect short walk." },
+                        { "name": "Milford Sound Cruise", "category": "Activity", "address": "Milford Sound Visitor Terminal", "coords": [-44.671694, 167.926694], "website": "milford-sound.co.nz", "description": "The main event. Take a 2-hour cruise to experience the scale and majesty of the fiord, with its towering peaks, waterfalls, and wildlife." },
+                        { "name": "Milford Sound Lodge", "category": "Campsite", "address": "State Highway 94, Milford Sound", "coords": [-44.677306, 167.935194], "website": "milfordlodge.com", "description": "The only accommodation in Milford Sound. Staying here means you get to experience the fiord's profound peace after the day-trippers leave." }
+                    ]
+                },
+                {
+                    "day": 12,
+                    "title": "Return from the Fiord",
+                    "date": "Friday, 17th October 2025",
+                    "briefing": "Retrace your steps along the spectacular Milford Road back towards Queenstown, offering a new perspective on the landscapes and a final, challenging hike.",
+                    "travelTime": "3 hr 45 min",
+                    "travelDistance": "287 km",
+                    "locations": [
+                        { "name": "The Chasm", "category": "Pit Stop", "address": "State Highway 94, Fiordland NP", "coords": [-44.770806, 168.014194], "website": "tripideas.nz", "description": "A short walk through rainforest to see the incredible power of the Cleddau River as it blasts through a narrow rock chasm." },
+                        { "name": "Mirror Lakes", "category": "Pit Stop", "address": "Te Anau-Milford Highway", "coords": [-45.116111, 167.997806], "website": null, "description": "On a calm day, these small lakes perfectly reflect the Earl Mountains. A quick and beautiful photo stop." },
+                        { "name": "Lake Marian Track (Full)", "category": "Activity", "address": "Hollyford Road, Fiordland", "coords": [-44.813194, 168.110889], "website": "doc.govt.nz", "description": "For the adventurous: a challenging 3-4 hour return hike to a stunning alpine lake in a hanging valley. A true Fiordland gem." },
+                        { "name": "Driftaway Queenstown", "category": "Campsite", "address": "11 Lake Avenue, Frankton, Queenstown", "coords": [-45.025889, 168.733611], "website": "driftawayqueenstown.co.nz", "description": "A premium holiday park with stunning lake and mountain views, featuring modern facilities and a beautiful setting." },
+                        { "name": "Fergburger", "category": "Food Spot", "address": "42 Shotover Street, Queenstown", "coords": [-45.031806, 168.661389], "website": "fergburger.com", "description": "A Queenstown institution. These giant, gourmet burgers are world-famous and worth the inevitable queue." },
+                        { "name": "Vudu Café & Larder", "category": "Food Spot", "address": "16 Rees Street, Queenstown", "coords": [-45.032306, 168.662389], "website": "vudu.co.nz", "description": "A modern waterfront café known for its excellent coffee, experimental cooking, and warm, welcoming vibe." }
+                    ]
+                },
+                {
+                    "day": 13,
+                    "title": "The Queenstown Finale",
+                    "date": "Saturday, 18th October 2025",
+                    "briefing": "A final full day of adventure, blending high-octane thrills with serene relaxation and world-class food and wine before returning your campervan.",
+                    "locations": [
+                        { "name": "Onsen Hot Pools", "category": "Activity", "address": "160 Arthurs Point Road, Arthurs Point", "coords": [-44.994694, 168.680389], "website": "onsen.co.nz", "description": "Indulge in a luxurious, private cedar-lined hot tub experience with spectacular views over the Shotover River." },
+                        { "name": "Ben Lomond Track", "category": "Activity", "address": "Starts at top of Skyline Gondola", "coords": [-45.029111, 168.657306], "website": "doc.govt.nz", "description": "A demanding full-day hike to the summit of Ben Lomond, providing arguably the best 360-degree views of the Queenstown region." },
+                        { "name": "Gibbston Valley Winery", "category": "Activity", "address": "1820 State Highway 6, Gibbston", "coords": [-45.009111, 168.919194], "website": "gibbstonvalley.com", "description": "Explore New Zealand's largest wine cave and sample world-renowned Central Otago Pinot Noir at this beautiful winery." },
+                        { "name": "Remarkables Market", "category": "Activity", "address": "Corner of Red Oaks Drive and Hawthorne Drive, Frankton", "coords": [-45.023389, 168.740389], "website": "remarkablesmarket.com", "description": "A vibrant weekly Saturday market with local produce, artisanal food, crafts, live music, and a great local atmosphere." },
+                        { "name": "Botswana Butchery", "category": "Food Spot", "address": "17 Marine Parade, Queenstown", "coords": [-45.032639, 168.660806], "website": "botswanabutchery.nz", "description": "One of Queenstown's premier fine-dining restaurants, located in a historic cottage with spectacular lake views and a diverse menu." },
+                        { "name": "Rātā", "category": "Food Spot", "address": "Te Nuku, 43 Ballarat Street, Queenstown", "coords": [-45.031528, 168.660611], "website": "ratadining.co.nz", "description": "A world-class dining experience from celebrity chef Josh Emett, showcasing the best of southern produce with an adventurous menu." },
+                        { "name": "TSS Earnslaw & Walter Peak", "category": "Food Spot", "address": "Steamer Wharf, 88 Beach Street, Queenstown", "coords": [-45.033111, 168.661194], "website": "realnz.com", "description": "Cruise across the lake on a historic steamship to Walter Peak High Country Farm for a gourmet barbecue dinner." },
+                        { "name": "Hotel St Moritz", "category": "Hotel", "address": "10-18 Brunswick Street, Queenstown", "coords": [-45.03375, 168.657306], "website": "stmoritz.co.nz", "description": "Your final night's accommodation. A touch of luxury with alpine charm, perfectly located to enjoy your last evening in Queenstown." }
+                    ]
+                },
+                {
+                    "day": 14,
+                    "title": "Farewell to Aotearoa",
+                    "date": "Sunday, 19th October 2025",
+                    "briefing": "Your incredible two-week journey comes to a close. The morning offers a final chance to soak in the Queenstown atmosphere before heading to the airport for your flight home.",
+                    "locations": [
+                         { "name": "Queenstown Airport (ZQN)", "category": "Pit Stop", "address": "Sir Henry Wigley Drive, Frankton, Queenstown", "coords": [-45.021111, 168.739167], "website": "queenstownairport.co.nz", "description": "Time to head home. Your flight departs at 14:25 NZDT." }
+                    ]
+                }
+            ]
+        };
+
+        let map;
+        let activeDay = 1;
+        let markers = [];
+        let routeLine = null;
+        let activeFilters = new Set();
+        const iconMapping = {
+            'Hotel': { icon: 'bed', color: '#1d4ed8' }, // blue
+            'Activity': { icon: 'sparkle', color: '#c026d3' }, // fuchsia
+            'Pit Stop': { icon: 'coffee', color: '#ca8a04' }, // yellow
+            'Food Spot': { icon: 'fork-knife', color: '#db2777' }, // pink
+            'Campsite': { icon: 'jeep', color: '#16a34a' } // green
+        };
+
+        function initializeMap() {
+            map = L.map('map').setView([-43.53, 172.63], 6);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
+        }
+
+        function createCustomIcon(category) {
+            const iconInfo = iconMapping[category] || { icon: 'map-pin', color: '#64748b' }; // Default
+            const iconHtml = `<div style="background-color: ${iconInfo.color};" class="rounded-full p-2 shadow-lg">
+                                <i class="ph-fill ph-${iconInfo.icon}" style="font-size: 18px; color: white;"></i>
+                              </div>`;
+            return L.divIcon({
+                html: iconHtml,
+                className: 'custom-map-icon',
+                iconSize: [34, 34],
+                iconAnchor: [17, 17],
+                popupAnchor: [0, -17]
+            });
+        }
+        
+        function clearMapLayers() {
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+            if (routeLine) {
+                map.removeLayer(routeLine);
+                routeLine = null;
+            }
+        }
+
+        function renderMarkersForDay(dayNumber) {
+            const dayData = appData.days.find(d => d.day === dayNumber);
+            if (!dayData) return;
+
+            const bounds = [];
+            dayData.locations.forEach(location => {
+                if (activeFilters.size > 0 && !activeFilters.has(location.category)) {
+                    return; // Skip if filters are active and category doesn't match
+                }
+                const marker = L.marker(location.coords, { icon: createCustomIcon(location.category) });
+                
+                let popupContent = `
+                    <div class="font-bold text-base text-slate-800">${location.name}</div>
+                    <div class="text-sm text-slate-500">${location.category}</div>
+                    <p class="text-slate-700 mt-1">${location.address}</p>
+                `;
+
+                if(location.website) {
+                    popupContent += `<a href="https://${location.website}" target="_blank" rel="noopener noreferrer" class="block mt-2 font-semibold text-blue-600">Visit Website &rarr;</a>`;
+                }
+                
+                marker.bindPopup(popupContent, { className: 'custom-popup' });
+                marker.addTo(map);
+
+                marker.on('click', () => {
+                   const locationElement = document.getElementById(`loc-${location.name.replace(/[^a-zA-Z0-9]/g, '-')}`);
+                   if (locationElement) {
+                       locationElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                       document.querySelectorAll('.location-card').forEach(card => card.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-50'));
+                       locationElement.classList.add('ring-2', 'ring-blue-500', 'bg-blue-50');
+                   }
+                });
+
+                markers.push(marker);
+                bounds.push(location.coords);
+                marker.locationName = location.name;
+            });
+            
+            if (bounds.length > 0) {
+                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+            }
+        }
+
+        function updateItineraryPanel(dayNumber) {
+            const dayData = appData.days.find(d => d.day === dayNumber);
+            if (!dayData) return;
+
+            document.getElementById('day-title').textContent = `Day ${dayData.day}: ${dayData.title}`;
+            document.getElementById('day-briefing').textContent = dayData.briefing;
+
+            // Update travel info
+            const travelInfoEl = document.getElementById('travel-info');
+            if (dayData.travelTime && dayData.travelDistance) {
+                travelInfoEl.innerHTML = `
+                    <div class="flex items-center gap-1.5">
+                        <i class="ph-bold ph-timer"></i>
+                        <span>${dayData.travelTime}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <i class="ph-bold ph-jeep"></i>
+                        <span>${dayData.travelDistance}</span>
+                    </div>
+                `;
+                travelInfoEl.classList.remove('hidden');
+            } else {
+                travelInfoEl.innerHTML = '';
+                travelInfoEl.classList.add('hidden');
+            }
+
+
+            const locationsList = document.getElementById('locations-list');
+            locationsList.innerHTML = '';
+            dayData.locations.forEach(location => {
+                if (activeFilters.size > 0 && !activeFilters.has(location.category)) {
+                    return; // Skip rendering if filtered out
+                }
+                const iconInfo = iconMapping[location.category] || { icon: 'map-pin', color: '#64748b' };
+                const locationEl = document.createElement('div');
+                locationEl.id = `loc-${location.name.replace(/[^a-zA-Z0-9]/g, '-')}`;
+                locationEl.className = 'location-card p-4 bg-white border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-all duration-200';
+                locationEl.innerHTML = `
+                    <div class="flex items-start space-x-4">
+                        <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style="background-color: ${iconInfo.color};">
+                            <i class="ph-fill ph-${iconInfo.icon}" style="font-size: 20px; color: white;"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-slate-800">${location.name}</h4>
+                            <p class="text-sm text-slate-500">${location.category}</p>
+                             <p class="text-sm text-slate-600 mt-2">${location.description || ''}</p>
+                        </div>
+                    </div>
+                `;
+                locationEl.addEventListener('click', () => {
+                    const targetMarker = markers.find(m => m.locationName === location.name);
+                    if (targetMarker) {
+                        map.setView(targetMarker.getLatLng(), 15);
+                        targetMarker.openPopup();
+
+                        document.querySelectorAll('.location-card').forEach(card => card.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-50'));
+                        locationEl.classList.add('ring-2', 'ring-blue-500', 'bg-blue-50');
+                    }
+                });
+                locationsList.appendChild(locationEl);
+            });
+        }
+        
+        function renderDaySelector() {
+            const selector = document.getElementById('day-selector');
+            selector.innerHTML = '';
+            appData.days.forEach(day => {
+                const button = document.createElement('button');
+                button.textContent = day.day;
+                button.dataset.day = day.day;
+                button.className = 'day-btn text-sm font-semibold p-2 rounded-md transition-colors duration-200';
+                if (day.day === activeDay) {
+                    button.classList.add('bg-blue-600', 'text-white', 'shadow');
+                } else {
+                    button.classList.add('bg-slate-200', 'text-slate-700', 'hover:bg-slate-300');
+                }
+                button.addEventListener('click', () => {
+                    selectDay(day.day);
+                });
+                selector.appendChild(button);
+            });
+        }
+
+        function renderFilterButtons() {
+            const dayData = appData.days.find(d => d.day === activeDay);
+            if (!dayData) return;
+            
+            const categories = [...new Set(dayData.locations.map(loc => loc.category))];
+            const container = document.getElementById('filter-buttons');
+            container.innerHTML = '';
+
+            categories.forEach(category => {
+                const button = document.createElement('button');
+                const iconInfo = iconMapping[category] || { icon: 'map-pin', color: '#64748b' };
+                button.dataset.category = category;
+                button.className = 'filter-btn flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full border transition-colors duration-200';
+                
+                if (activeFilters.has(category)) {
+                     button.style.backgroundColor = iconInfo.color;
+                     button.style.borderColor = iconInfo.color;
+                     button.style.color = 'white';
+                } else {
+                    button.style.color = iconInfo.color;
+                    button.style.borderColor = iconInfo.color;
+                    button.style.backgroundColor = 'transparent';
+                }
+                
+                button.innerHTML = `<i class="ph-fill ph-${iconInfo.icon}"></i> ${category}`;
+
+                button.addEventListener('click', () => {
+                    toggleFilter(category);
+                });
+                container.appendChild(button);
+            });
+        }
+
+        function toggleFilter(category) {
+            if (activeFilters.has(category)) {
+                activeFilters.delete(category);
+            } else {
+                activeFilters.add(category);
+            }
+            updateUIForDay(activeDay);
+        }
+
+        function updateUIForDay(dayNumber) {
+            clearMapLayers();
+            renderFilterButtons();
+            renderMarkersForDay(dayNumber);
+            updateItineraryPanel(dayNumber);
+        }
+
+        function selectDay(dayNumber) {
+            activeDay = dayNumber;
+            activeFilters.clear();
+            
+            document.querySelectorAll('.day-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white', 'shadow');
+                btn.classList.add('bg-slate-200', 'text-slate-700', 'hover:bg-slate-300');
+            });
+
+            const activeBtn = document.querySelector(`.day-btn[data-day='${dayNumber}']`);
+            if(activeBtn) {
+                activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow');
+                activeBtn.classList.remove('bg-slate-200', 'text-slate-700', 'hover:bg-slate-300');
+            }
+            
+            updateUIForDay(dayNumber);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeMap();
+            renderDaySelector();
+            selectDay(1); // Start with Day 1
+        });
+    </script>
+</body>
+</html>
