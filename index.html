@@ -62,10 +62,10 @@
     <div id="app" class="flex flex-col md:flex-row h-screen w-screen">
         
         <!-- Sidebar: Placed below map on mobile (order-2) -->
-        <div class="w-full md:w-1/3 xl:w-1/4 bg-white flex flex-col shadow-lg z-10 order-2 md:order-1 h-2/3 md:h-full">
+        <div class="w-full md:w-1/3 xl:w-1/4 bg-white flex flex-col shadow-lg z-10 order-2 md:order-1 h-3/4 md:h-full">
             <!-- Header -->
             <header class="p-4 border-b border-slate-200 shrink-0">
-                <h1 class="text-2xl font-bold text-slate-800">Cass & Alex's NZ Adventure</h1>
+                <h1 class="text-2xl font-bold text-slate-800">An Adventurer's Guide</h1>
                 <p class="text-sm text-slate-500">New Zealand's South Island</p>
             </header>
 
@@ -83,7 +83,10 @@
                     <div id="travel-info" class="mb-3 flex items-center gap-4 text-sm text-slate-600 font-medium">
                         <!-- Travel info injected here -->
                     </div>
-                    <p id="day-briefing" class="text-sm text-slate-600"></p>
+                     <div id="route-info" class="flex flex-col sm:flex-row items-start sm:items-center gap-x-4 gap-y-2 text-sm text-slate-600 font-medium">
+                        <!-- Start/End info injected here -->
+                    </div>
+                    <p id="day-briefing" class="text-sm text-slate-600 mt-3"></p>
                 </div>
                 
                 <!-- Filters -->
@@ -100,7 +103,7 @@
         </div>
 
         <!-- Map: Placed above sidebar on mobile (order-1) -->
-        <div id="map" class="w-full md:w-2/3 xl:w-3/4 order-1 md:order-2 h-1/3 md:h-full flex-shrink-0"></div>
+        <div id="map" class="w-full md:w-2/3 xl:w-3/4 order-1 md:order-2 h-1/4 md:h-full flex-shrink-0"></div>
 
     </div>
 
@@ -110,6 +113,8 @@
                 {
                     "day": 1,
                     "title": "Arrival in the Garden City",
+                    "startLocation": "Christchurch",
+                    "endLocation": "Christchurch",
                     "date": "Monday, 6th October 2025",
                     "briefing": "Your journey begins in Christchurch. Known as the 'Garden City,' it is a place defined by resilience and vibrant creativity. Today is about a gentle immersion into New Zealand's urban culture.",
                     "locations": [
@@ -130,6 +135,8 @@
                 {
                     "day": 2,
                     "title": "The Great Alpine Highway",
+                    "startLocation": "Christchurch",
+                    "endLocation": "Arthur's Pass",
                     "date": "Tuesday, 7th October 2025",
                     "briefing": "Today, the true road trip begins. You'll trade the urban energy of Christchurch for the raw, dramatic beauty of the Southern Alps, journeying along the spectacular Great Alpine Highway (SH73).",
                     "travelTime": "2 hours",
@@ -146,6 +153,8 @@
                 {
                     "day": 3,
                     "title": "To the Starlight Reserve",
+                    "startLocation": "Arthur's Pass",
+                    "endLocation": "Lake Tekapo",
                     "date": "Wednesday, 8th October 2025",
                     "briefing": "Today's journey is a quintessential South Island traverse, taking you from Arthur's Pass into the vast, golden landscapes of the Mackenzie Basin, famed for its incredibly clear skies.",
                     "travelTime": "3 hr 45 min",
@@ -167,6 +176,8 @@
                  {
                     "day": 4,
                     "title": "Journey to the Heart of the Alps",
+                     "startLocation": "Lake Tekapo",
+                    "endLocation": "Aoraki/Mount Cook",
                     "date": "Thursday, 9th October 2025",
                     "briefing": "A short but spectacular drive deep into Aoraki/Mount Cook National Park. The goal is to arrive early for the significant hike up to Mueller Hut.",
                     "travelTime": "1 hr 15 min",
@@ -180,6 +191,8 @@
                 {
                     "day": 5,
                     "title": "Aoraki/Mount Cook Deep Dive",
+                    "startLocation": "Aoraki/Mount Cook",
+                    "endLocation": "Aoraki/Mount Cook",
                     "date": "Friday, 10th October 2025",
                     "briefing": "A day of deep immersion in the wonders of Aoraki/Mount Cook National Park. With no long drive, you have time to explore the various valley-floor walks and experiences.",
                     "locations": [
@@ -197,6 +210,8 @@
                 {
                     "day": 6,
                     "title": "Over the Lindis to Wānaka",
+                    "startLocation": "Aoraki/Mount Cook",
+                    "endLocation": "Wānaka",
                     "date": "Saturday, 11th October 2025",
                     "briefing": "Journey south to the vibrant lakeside town of Wānaka. The drive is one of the most celebrated in New Zealand, over the dramatic, sculptural landscape of the Lindis Pass.",
                     "travelTime": "2 hr 30 min",
@@ -215,6 +230,8 @@
                 {
                     "day": 7,
                     "title": "Wānaka Deep Dive",
+                    "startLocation": "Wānaka",
+                    "endLocation": "Wānaka",
                     "date": "Sunday, 12th October 2025",
                     "briefing": "A day for deep immersion in the spectacular landscapes surrounding Wānaka. Tackle one of the region's iconic hikes or explore the more relaxed side of this beautiful area.",
                     "locations": [
@@ -231,6 +248,8 @@
                 {
                     "day": 8,
                     "title": "The Crown Range to Queenstown",
+                    "startLocation": "Wānaka",
+                    "endLocation": "Queenstown",
                     "date": "Monday, 13th October 2025",
                     "briefing": "A short but spectacular drive via the Crown Range Road, the highest main road in New Zealand. Descend into the vibrant, world-renowned adventure capital of Queenstown.",
                     "travelTime": "1 hr 10 min",
@@ -247,6 +266,8 @@
                 {
                     "day": 9,
                     "title": "Queenstown Deep Dive",
+                    "startLocation": "Queenstown",
+                    "endLocation": "Queenstown",
                     "date": "Tuesday, 14th October 2025",
                     "briefing": "A full day to dive into the adrenaline and spectacle of Queenstown. From high-speed thrills on the water to panoramic views from above, today is about embracing the energy of the 'Adventure Capital.'",
                     "locations": [
@@ -262,6 +283,8 @@
                 {
                     "day": 10,
                     "title": "The Gateway to Fiordland",
+                    "startLocation": "Queenstown",
+                    "endLocation": "Te Anau",
                     "date": "Wednesday, 15th October 2025",
                     "briefing": "Leave the buzz of Queenstown behind and head towards Te Anau, the tranquil gateway to the majestic Fiordland National Park.",
                     "travelTime": "2 hr 30 min",
@@ -279,6 +302,8 @@
                 {
                     "day": 11,
                     "title": "The Road to Milford Sound",
+                    "startLocation": "Te Anau",
+                    "endLocation": "Milford Sound",
                     "date": "Thursday, 16th October 2025",
                     "briefing": "One of the world's greatest driving days. The journey from Te Anau to Milford Sound is an integral part of the Fiordland experience, culminating at the majestic fiord itself.",
                     "travelTime": "1 hr 20 min",
@@ -293,6 +318,8 @@
                 {
                     "day": 12,
                     "title": "Return from the Fiord",
+                    "startLocation": "Milford Sound",
+                    "endLocation": "Queenstown",
                     "date": "Friday, 17th October 2025",
                     "briefing": "Retrace your steps along the spectacular Milford Road back towards Queenstown, offering a new perspective on the landscapes and a final, challenging hike.",
                     "travelTime": "3 hr 45 min",
@@ -309,6 +336,8 @@
                 {
                     "day": 13,
                     "title": "The Queenstown Finale",
+                    "startLocation": "Queenstown",
+                    "endLocation": "Queenstown",
                     "date": "Saturday, 18th October 2025",
                     "briefing": "A final full day of adventure, blending high-octane thrills with serene relaxation and world-class food and wine before returning your campervan.",
                     "locations": [
@@ -325,6 +354,8 @@
                 {
                     "day": 14,
                     "title": "Farewell to Aotearoa",
+                    "startLocation": "Queenstown",
+                    "endLocation": "Queenstown Airport",
                     "date": "Sunday, 19th October 2025",
                     "briefing": "Your incredible two-week journey comes to a close. The morning offers a final chance to soak in the Queenstown atmosphere before heading to the airport for your flight home.",
                     "locations": [
@@ -399,6 +430,8 @@
                 if(location.website) {
                     popupContent += `<a href="https://${location.website}" target="_blank" rel="noopener noreferrer" class="block mt-2 font-semibold text-blue-600">Visit Website &rarr;</a>`;
                 }
+
+                popupContent += `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${location.name}, ${location.address}`)}" target="_blank" rel="noopener noreferrer" class="block mt-1 font-semibold text-blue-600">Open in Google Maps &rarr;</a>`;
                 
                 marker.bindPopup(popupContent, { className: 'custom-popup' });
                 marker.addTo(map);
@@ -448,6 +481,25 @@
                 travelInfoEl.classList.add('hidden');
             }
 
+            // Update route info
+            const routeInfoEl = document.getElementById('route-info');
+            if (dayData.startLocation && dayData.endLocation) {
+                routeInfoEl.innerHTML = `
+                    <div class="flex items-center gap-1.5">
+                        <i class="ph-bold ph-map-pin"></i>
+                        <span>Start: <strong class="font-semibold text-slate-800">${dayData.startLocation}</strong></span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <i class="ph-bold ph-flag-checkered"></i>
+                        <span>End: <strong class="font-semibold text-slate-800">${dayData.endLocation}</strong></span>
+                    </div>
+                `;
+                routeInfoEl.classList.remove('hidden');
+            } else {
+                routeInfoEl.innerHTML = '';
+                routeInfoEl.classList.add('hidden');
+            }
+
 
             const locationsList = document.getElementById('locations-list');
             locationsList.innerHTML = '';
@@ -468,6 +520,10 @@
                             <h4 class="font-semibold text-slate-800">${location.name}</h4>
                             <p class="text-sm text-slate-500">${location.category}</p>
                              <p class="text-sm text-slate-600 mt-2">${location.description || ''}</p>
+                            <div class="flex items-center flex-wrap gap-x-4 gap-y-2 mt-3 text-sm font-semibold">
+                                ${location.website ? `<a href="https://${location.website}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline flex items-center gap-1"><i class="ph ph-globe"></i> Website</a>` : ''}
+                                <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${location.name}, ${location.address}`)}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline flex items-center gap-1"><i class="ph ph-map-trifold"></i> Google Maps</a>
+                            </div>
                         </div>
                     </div>
                 `;
